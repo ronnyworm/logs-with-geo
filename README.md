@@ -5,8 +5,8 @@ Ingest and enrich apache logs with geoip information (country, city, latitude, l
 - Get the GeoLite-City.mmdb from MaxMind GeoIP and store it to the `geoip-db` folder.
 - install requirements as root `python3 -m pip install -r requirements.txt`
 - add this to roots crontab: `* * * * * /usr/bin/python3 /YOUR/PATH/apache-with-geoip/apache-with-geoip.py`
-- to run it more often than once a minute (eg every 10 seconds), you could use this: `*/1 * * * * /YOUR/PATH/apache-with-geoip/runEvery.sh 10 /usr/bin/python3 /YOUR/PATH/apache-with-geoip/apache-with-geoip.py`
-- watch all_with_geoip.log grow with added geo data!
+- to run it more often than once a minute (eg every 10 seconds), you could use this: `*/1 * * * * /YOUR/PATH/apache-with-geoip/runEvery.sh 5 "/usr/bin/python3 /YOUR/PATH/apache-with-geoip/apache-with-geoip.py"`
+- watch all_with_geoip.log grow with added geo data (eg with `tail -f all_with_geoip.log`!
 
 ## TO DO
 - make paths configurable
