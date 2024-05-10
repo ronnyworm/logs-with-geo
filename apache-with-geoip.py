@@ -3,19 +3,24 @@ import sys
 import re
 import geoip2.database
 
-# Path to the MaxMind GeoIP2 database file
-DATABASE_FILE = 'geoip-db/GeoLite2-City.mmdb'
+SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
+APACHE_PATH = 'sample-logs'
 
-print_unknown_ips = False
+# Path to the MaxMind GeoIP2 database file
+DATABASE_FILE = SCRIPT_PATH + '/geoip-db/GeoLite2-City.mmdb'
+
+print_unknown_ips = True
 
 # Initialize the GeoIP2 reader
 reader = geoip2.database.Reader(DATABASE_FILE)
 
 # List of paths to Apache access log files
 LOG_FILES = [
-    'sample-logs/access.log',
-    'sample-logs/other_vhosts_access.log',
+    APACHE_PATH + '/access.log',
+    APACHE_PATH + '/other_vhosts_access.log',
 ]
+
+OUT_FILE = APACHE_PATH + '/all_with_geoip.log'
 
 # Path to the file storing the last processed line number for each log file
 LAST_LINE_FILES = [filename.replace('.log', '.last_line') for filename in LOG_FILES]
@@ -24,6 +29,12 @@ def exit_if_file_missing(filename):
     if not os.path.isfile(filename):
         sys.stderr.write(f'Houston, we have a problem, {filename} is missing\n')
         sys.exit(1)
+
+def print_to_outfile(text):
+    f = open(OUT_FILE, 'a', encoding='utf-8')
+
+    f.write(text + "\n")
+    f.close()
 
 # Regular expressions for extracting IP addresses from log lines of different formats
 IP_REGEX_ACCESS_LOG = r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
@@ -45,7 +56,7 @@ def get_geolocation(ip_address):
 
 def process_access_log(log_file, last_line_file, ip_regex):
     last_processed_line = 0
-    
+
     # Read the last processed line number from the file
     try:
         with open(last_line_file, 'r') as f:
@@ -56,15 +67,20 @@ def process_access_log(log_file, last_line_file, ip_regex):
     # Check if the log file has been rotated (inode number changed)
     current_inode = os.stat(log_file).st_ino
     if last_processed_line > 0 and last_processed_line > current_inode:
-        # Log file has been rotated, reset last processed line number
+        sys.stderr.write('Log file has been rotated, reset last processed line number')
         last_processed_line = 0
     
     with open(log_file, 'r') as file:
         # Skip lines until reaching the last processed line
-        for _ in range(last_processed_line):
-            next(file)
+        try:
+            for _ in range(last_processed_line):
+                next(file)
+        except:
+            sys.stderr.write('Error while jumping to last_processed_line, reset it\n')
+            last_processed_line = 0
         
         # Process remaining lines
+        added = 0
         for line_number, line in enumerate(file, start=1):
             match = re.match(ip_regex, line)
             if match:
@@ -79,13 +95,15 @@ def process_access_log(log_file, last_line_file, ip_regex):
             
             # Write the original log line and geolocation information to the output file
             if country and city:
-                print(f"{line.strip()} country:\"{country}\" city:\"{city}\" lat:{latitude} lng:{longitude}")
+                added += 1
+                print_to_outfile(f"{line.strip()} country:\"{country}\" city:\"{city}\" lat:{latitude} lng:{longitude}")
             else:
                 if print_unknown_ips:
                     sys.stderr.write(f"Skipping log line {line_number} - Geolocation not found\n")
                 
             # Update last processed line number
             last_processed_line = line_number
+        print(f'Processed remaining {added} lines from {log_file}:{last_processed_line}')
     
     # Write the last processed line number to the file
     with open(last_line_file, 'w') as f:
