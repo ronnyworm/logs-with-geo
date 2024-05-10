@@ -11,8 +11,7 @@ DATABASE_FILE = SCRIPT_PATH + '/geoip-db/GeoLite2-City.mmdb'
 
 print_unknown_ips = True
 
-# Initialize the GeoIP2 reader
-reader = geoip2.database.Reader(DATABASE_FILE)
+geoip2_reader = geoip2.database.Reader(DATABASE_FILE)
 
 # List of paths to Apache access log files
 LOG_FILES = [
@@ -43,7 +42,7 @@ IP_REGEX_VHOST_LOG = r'^\S+ (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
 def get_geolocation(ip_address):
     try:
         # Perform GeoIP lookup for the IP address
-        response = reader.city(ip_address)
+        response = geoip2_reader.city(ip_address)
         country = response.country.name
         city = response.city.name
         latitude = response.location.latitude
@@ -127,5 +126,4 @@ for log_file, last_line_file in zip(LOG_FILES, LAST_LINE_FILES):
         ip_regex = IP_REGEX_ACCESS_LOG
     process_access_log(log_file, last_line_file, ip_regex)
 
-# Close the GeoIP2 reader
-reader.close()
+geoip2_reader.close()
