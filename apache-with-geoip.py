@@ -54,6 +54,12 @@ def get_geolocation(ip_address):
             sys.stderr.write(f"Error: {e}\n")
         return None, None, None, None
 
+def line_count(filename):
+    lines = 0
+    with open(filename, 'r') as fp:
+        lines = len(fp.readlines())
+    return lines
+
 def process_access_log(log_file, last_line_file, ip_regex):
     last_processed_line = 0
 
@@ -63,47 +69,48 @@ def process_access_log(log_file, last_line_file, ip_regex):
             last_processed_line = int(f.read())
     except FileNotFoundError:
         pass
+
     
     # Check if the log file has been rotated (inode number changed)
     current_inode = os.stat(log_file).st_ino
     if last_processed_line > 0 and last_processed_line > current_inode:
         sys.stderr.write('Log file has been rotated, reset last processed line number')
         last_processed_line = 0
-    
-    with open(log_file, 'r') as file:
-        # Skip lines until reaching the last processed line
-        try:
-            for _ in range(last_processed_line):
-                next(file)
-        except:
-            sys.stderr.write('Error while jumping to last_processed_line, reset it\n')
-            last_processed_line = 0
-        
-        # Process remaining lines
-        added = 0
-        for line_number, line in enumerate(file, start=1):
-            match = re.match(ip_regex, line)
-            if match:
-                ip_address = match.group(1)
-            else:
-                if print_unknown_ips:
-                    sys.stderr.write(f"Skipping log line {line_number} - No IP address found\n")
-                continue
-            
-            # Perform GeoIP lookup
-            country, city, latitude, longitude = get_geolocation(ip_address)
-            
-            # Write the original log line and geolocation information to the output file
-            if country and city:
-                added += 1
-                print_to_outfile(f"{line.strip()} country:\"{country}\" city:\"{city}\" lat:{latitude} lng:{longitude}")
-            else:
-                if print_unknown_ips:
-                    sys.stderr.write(f"Skipping log line {line_number} - Geolocation not found\n")
-                
-            # Update last processed line number
-            last_processed_line = line_number
-        print(f'Processed remaining {added} lines from {log_file}:{last_processed_line}')
+
+    added = 0
+    if line_count(log_file) >= last_processed_line:
+        with open(log_file, 'r') as file:
+            # Skip lines until reaching the last processed line
+            try:
+                for _ in range(last_processed_line):
+                    next(file)
+            except:
+                sys.stderr.write('Error while jumping to last_processed_line, reset it\n')
+                last_processed_line = 0
+
+            # Process remaining lines
+            for line_number, line in enumerate(file, start=last_processed_line + 1):
+                match = re.match(ip_regex, line)
+                if match:
+                    ip_address = match.group(1)
+
+                    # Perform GeoIP lookup
+                    country, city, latitude, longitude = get_geolocation(ip_address)
+                    
+                    # Write the original log line and geolocation information to the output file
+                    if country and city:
+                        print_to_outfile(f"{line.strip()} country:\"{country}\" city:\"{city}\" lat:{latitude} lng:{longitude}")
+                    else:
+                        if print_unknown_ips:
+                            sys.stderr.write(f"Skipping log line {line_number} - Geolocation not found\n")
+                    added += 1
+                else:
+                    if print_unknown_ips:
+                        sys.stderr.write(f"Skipping log line {line_number} - No IP address found\n")
+                    
+                # Update last processed line number
+                last_processed_line = line_number
+    print(f'Processed remaining {added} lines from {log_file}:{last_processed_line}')
     
     # Write the last processed line number to the file
     with open(last_line_file, 'w') as f:
