@@ -2,29 +2,19 @@ import os
 import sys
 import re
 import geoip2.database
-
-SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
-APACHE_PATH = 'sample-logs'
-
-# Path to the MaxMind GeoIP2 database file
-DATABASE_FILE = SCRIPT_PATH + '/geoip-db/GeoLite2-City.mmdb'
-
-print_unknown_ips_to_stderr = True
-
-# List of paths to Apache access log files
-LOG_FILES = [
-    APACHE_PATH + '/access.log',
-    APACHE_PATH + '/other_vhosts_access.log',
-]
-
-OUT_FILE = APACHE_PATH + '/all_with_geoip.log'
-
-# Path to the file storing the last processed line number for each log file
-LAST_LINE_FILES = [filename.replace('.log', '.last_line') for filename in LOG_FILES]
+import argparse as ap
 
 # Regular expressions for extracting IP addresses from log lines of different formats
 IP_REGEX_ACCESS_LOG = r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
 IP_REGEX_VHOST_LOG = r'^\S+ (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
+
+print_unknown_ips_to_stderr = True
+
+class MyParser(ap.ArgumentParser):
+    def error(self, message):
+        sys.stderr.write('error: %s\n' % message) # print to stderr print stderr
+        self.print_help()
+        sys.exit(2)
 
 def exit_if_file_missing(filename):
     if not os.path.isfile(filename):
@@ -120,8 +110,31 @@ def process_single_line(line_number, line, ip_regex):
         if print_unknown_ips_to_stderr:
             sys.stderr.write(f"Skipping log line {line_number} - No IP address found\n")
 
+def handle_args():
+    p = MyParser(description="Configuration", formatter_class=ap.ArgumentDefaultsHelpFormatter)
+    p.add_argument("-o", "--outfile", default='/var/log/apache2/with_geoip.log', help="Path to file that stores the enriched logs")
+    p.add_argument("-f", "--sourcefiles", action="append", help="File(s) to read from", required=True)
+
+    if len(sys.argv) == 1:
+        p.print_help()
+        sys.exit(1)
+
+    args = p.parse_args()
+
+    return args
+
 if __name__ == '__main__':
+    args = handle_args()
+
+    SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
+    DATABASE_FILE = SCRIPT_PATH + '/geoip-db/GeoLite2-City.mmdb' # MaxMind GeoIP2 database
     geoip2_reader = geoip2.database.Reader(DATABASE_FILE)
+
+    OUT_FILE = args.outfile
+    LOG_FILES = args.sourcefiles
+
+    # Path to the file storing the last processed line number for each log file
+    LAST_LINE_FILES = [filename.replace('.log', '.last_line') for filename in LOG_FILES]
 
     [exit_if_file_missing(filename) for filename in LOG_FILES]
     exit_if_file_missing(DATABASE_FILE)
