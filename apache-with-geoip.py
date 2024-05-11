@@ -57,9 +57,8 @@ def get_last_processed_line(log_file, last_line_file):
     except FileNotFoundError:
         pass
     
-    # Check if the log file has been rotated (inode number changed)
-    current_inode = os.stat(log_file).st_ino
-    if last_processed_line > 0 and last_processed_line > current_inode:
+    # Check if the log file has been rotated
+    if last_processed_line > 0 and last_processed_line > line_count(log_file):
         sys.stderr.write('Log file has been rotated, reset last processed line number')
         last_processed_line = 0
 
