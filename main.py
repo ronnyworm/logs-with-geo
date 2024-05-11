@@ -111,14 +111,14 @@ def process_single_line(line_number, line, ip_regex, args):
             print_to_outfile(f"{line.strip()} country:\"{country}\" city:\"{city}\" lat:{latitude} lng:{longitude}")
         else:
             if print_unknown_ips_to_stderr:
-                sys.stderr.write(f"Skipping log line {line_number} - Geolocation for {ip_address} not found\n")
+                sys.stderr.write(f"Log line {line_number} - Geolocation for {ip_address} not found\n")
 
             if args.logunresolved == 1:
                 print_to_outfile(f"{line.strip()} country:\"\" city:\"\" lat: lng:")
 
     else:
         if print_unknown_ips_to_stderr:
-            sys.stderr.write(f"Skipping log line {line_number} - No IP address found\n")
+            sys.stderr.write(f"Log line {line_number} - No IP address found\n")
 
         if args.logunresolved == 1:
             print_to_outfile(f"{line.strip()} country:\"\" city:\"\" lat: lng:")
