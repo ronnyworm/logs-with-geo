@@ -1,6 +1,8 @@
 # Logs with geo
 Ingest and enrich logs with geoip information (country, city, latitude, longitude).
 
+![](hero.png)
+
 The original idea here was to enrich my [apache](https://httpd.apache.org/) logs for [Loki](https://grafana.com/oss/loki/) so that I could use the Geomap view for my logs in [Grafana](https://grafana.com/).
 
 ## Setup on the server
@@ -46,3 +48,4 @@ Then watch the sample-logs/all_with_geoip.log grow with added geo data!
 ## To Dos
 - lint with flake8
 - set up integration tests
+- make it log source agnostic (not only apache, but also nginx or even something else that logs ips)
