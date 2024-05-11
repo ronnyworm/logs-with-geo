@@ -42,3 +42,7 @@ and this in another
 	done
 
 Then watch the sample-logs/all_with_geoip.log grow with added geo data!
+
+## To Dos
+- lint with flake8
+- set up integration tests
