@@ -12,20 +12,23 @@ print_unknown_ips_to_stderr = True
 
 class MyParser(ap.ArgumentParser):
     def error(self, message):
-        sys.stderr.write('error: %s\n' % message) # print to stderr print stderr
+        sys.stderr.write('error: %s\n' % message)
         self.print_help()
         sys.exit(2)
+
 
 def exit_if_file_missing(filename):
     if not os.path.isfile(filename):
         sys.stderr.write(f'Houston, we have a problem, {filename} is missing\n')
         sys.exit(1)
 
+
 def print_to_outfile(text):
     f = open(OUT_FILE, 'a', encoding='utf-8')
 
     f.write(text + "\n")
     f.close()
+
 
 def get_geolocation(ip_address):
     try:
@@ -41,11 +44,13 @@ def get_geolocation(ip_address):
             sys.stderr.write(f"Error: {e}\n")
         return None, None, None, None
 
+
 def line_count(filename):
     lines = 0
     with open(filename, 'r') as fp:
         lines = len(fp.readlines())
     return lines
+
 
 def get_last_processed_line(log_file, last_line_file):
     last_processed_line = 0
@@ -63,6 +68,7 @@ def get_last_processed_line(log_file, last_line_file):
         last_processed_line = 0
 
     return last_processed_line
+
 
 def process_access_log(log_file, last_line_file, ip_regex):
     last_processed_line = get_last_processed_line(log_file, last_line_file)
@@ -91,6 +97,7 @@ def process_access_log(log_file, last_line_file, ip_regex):
     with open(last_line_file, 'w') as f:
         f.write(str(last_processed_line))
 
+
 def process_single_line(line_number, line, ip_regex):
     match = re.match(ip_regex, line)
     if match:
@@ -109,6 +116,7 @@ def process_single_line(line_number, line, ip_regex):
         if print_unknown_ips_to_stderr:
             sys.stderr.write(f"Skipping log line {line_number} - No IP address found\n")
 
+
 def handle_args():
     p = MyParser(description="Configuration", formatter_class=ap.ArgumentDefaultsHelpFormatter)
     p.add_argument("-o", "--outfile", default='/var/log/apache2/with_geoip.log', help="Path to file that stores the enriched logs")
@@ -121,6 +129,7 @@ def handle_args():
     args = p.parse_args()
 
     return args
+
 
 if __name__ == '__main__':
     args = handle_args()
