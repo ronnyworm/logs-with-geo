@@ -1,7 +1,7 @@
-# apache-with-geoip
-Ingest and enrich [apache](https://httpd.apache.org/) logs with geoip information (country, city, latitude, longitude), then add it to another log.
+# Logs with geo
+Ingest and enrich logs with geoip information (country, city, latitude, longitude).
 
-The purpose here was to enrich the logs for [Loki](https://grafana.com/oss/loki/) so that I could use the Geomap view for my logs in [Grafana](https://grafana.com/).
+The original idea here was to enrich my [apache](https://httpd.apache.org/) logs for [Loki](https://grafana.com/oss/loki/) so that I could use the Geomap view for my logs in [Grafana](https://grafana.com/).
 
 ## Setup on the server
 1. Get the GeoLite-City.mmdb from MaxMind GeoIP and store it to the `geoip-db` folder.
