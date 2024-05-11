@@ -59,7 +59,7 @@ def get_last_processed_line(log_file, last_line_file):
     try:
         with open(last_line_file, 'r') as f:
             last_processed_line = int(f.read())
-    except FileNotFoundError:
+    except (FileNotFoundError, ValueError):
         pass
     
     # Check if the log file has been rotated
@@ -70,7 +70,7 @@ def get_last_processed_line(log_file, last_line_file):
     return last_processed_line
 
 
-def process_access_log(log_file, last_line_file, ip_regex):
+def process_access_log(log_file, last_line_file, ip_regex, args):
     last_processed_line = get_last_processed_line(log_file, last_line_file)
 
     processed_line_count = 0
@@ -86,7 +86,7 @@ def process_access_log(log_file, last_line_file, ip_regex):
 
             # Process remaining lines
             for line_number, line in enumerate(file, start=last_processed_line + 1):
-                process_single_line(line_number, line, ip_regex)
+                process_single_line(line_number, line, ip_regex, args)
 
                 processed_line_count += 1
                 last_processed_line = line_number
@@ -98,7 +98,7 @@ def process_access_log(log_file, last_line_file, ip_regex):
         f.write(str(last_processed_line))
 
 
-def process_single_line(line_number, line, ip_regex):
+def process_single_line(line_number, line, ip_regex, args):
     match = re.match(ip_regex, line)
     if match:
         ip_address = match.group(1)
@@ -112,15 +112,23 @@ def process_single_line(line_number, line, ip_regex):
         else:
             if print_unknown_ips_to_stderr:
                 sys.stderr.write(f"Skipping log line {line_number} - Geolocation for {ip_address} not found\n")
+
+            if args.logunresolved == 1:
+                print_to_outfile(f"{line.strip()} country:\"\" city:\"\" lat: lng:")
+
     else:
         if print_unknown_ips_to_stderr:
             sys.stderr.write(f"Skipping log line {line_number} - No IP address found\n")
+
+        if args.logunresolved == 1:
+            print_to_outfile(f"{line.strip()} country:\"\" city:\"\" lat: lng:")
 
 
 def handle_args():
     p = MyParser(description="Configuration", formatter_class=ap.ArgumentDefaultsHelpFormatter)
     p.add_argument("-o", "--outfile", default='/var/log/apache2/with_geoip.log', help="Path to file that stores the enriched logs")
     p.add_argument("-f", "--sourcefiles", action="append", help="File(s) to read from", required=True)
+    p.add_argument("--logunresolved", type=int, default=1, help="Also print to outfile if no geo info could be retrieved")
 
     if len(sys.argv) == 1:
         p.print_help()
@@ -153,6 +161,6 @@ if __name__ == '__main__':
             ip_regex = IP_REGEX_VHOST_LOG
         else:
             ip_regex = IP_REGEX_ACCESS_LOG
-        process_access_log(log_file, last_line_file, ip_regex)
+        process_access_log(log_file, last_line_file, ip_regex, args)
 
     geoip2_reader.close()
