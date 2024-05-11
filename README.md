@@ -14,16 +14,16 @@ Prepare two sample log files: sample-logs/access.log and sample-logs/other_vhost
 
 Attempt a first run like this
 
-	python3 apache-with-geoip.py -o sample-logs/all_with_geoip.log -f sample-logs/access.log -f sample-logs/other_vhosts_access.log
+	python3 main.py -o sample-logs/all_with_geoip.log -f sample-logs/access.log -f sample-logs/other_vhosts_access.log
 
 ### cron
 add this to roots crontab:
 
-	* * * * * /usr/bin/python3 /YOUR/PATH/apache-with-geoip/apache-with-geoip.py -o /var/log/apache2/all_with_geoip.log -f /var/log/apache2/access.log -f /var/log/apache2/other_vhosts_access.log
+	* * * * * /usr/bin/python3 /YOUR/PATH/logs-with-geo/main.py -o /var/log/apache2/all_with_geoip.log -f /var/log/apache2/access.log -f /var/log/apache2/other_vhosts_access.log
 
 To run it more often than once a minute (eg every 10 seconds), you could use this:
 
-	*/1 * * * * /YOUR/PATH/apache-with-geoip/runEvery.sh 5 "/usr/bin/python3 /YOUR/PATH/apache-with-geoip/apache-with-geoip.py -o /var/log/apache2/all_with_geoip.log -f /var/log/apache2/access.log -f /var/log/apache2/other_vhosts_access.log"
+	*/1 * * * * /YOUR/PATH/logs-with-geo/runEvery.sh 5 "/usr/bin/python3 /YOUR/PATH/logs-with-geo/main.py -o /var/log/apache2/all_with_geoip.log -f /var/log/apache2/access.log -f /var/log/apache2/other_vhosts_access.log"
 
 Watch all_with_geoip.log grow with added geo data (eg with `tail -f all_with_geoip.log`!
 
@@ -39,7 +39,7 @@ run this in one window:
 and this in another
 
 	while [ 1 ]; do
-        python3 apache-with-geoip.py -o sample-logs/all_with_geoip.log -f sample-logs/access.log -f sample-logs/other_vhosts_access.log
+        python3 main.py -o sample-logs/all_with_geoip.log -f sample-logs/access.log -f sample-logs/other_vhosts_access.log
 	    sleep 3
 	done
 
