@@ -1,0 +1,13 @@
+[Unit]
+Description = Logs with Geo
+
+[Service]
+Type           = simple
+User           = root
+Group          = root
+Restart        = always
+StandardOutput = append:/YOUR/INSTALLATION/FOLDER/🔥/errors.log
+ExecStart      = python3 main.py 🔥YOUR ARGUMENTS
+
+[Install]
+WantedBy = multi-user.target
