@@ -5,6 +5,7 @@ import os
 
 testlog = "tests/test.log"
 testinput = "tests/examples/other_vhosts_access.log"
+testinput_lastline = "tests/examples/other_vhosts_access.last_line"
 
 
 class TestMainFlow:
@@ -18,11 +19,12 @@ class TestMainFlow:
     def test_main_output(self, capsys, monkeypatch):
         if os.path.isfile(testlog):
             os.remove(testlog)
-        if os.path.isfile(testinput + ".last_line"):
-            os.remove(testlog + ".last_line")
+        if os.path.isfile(testinput_lastline):
+            os.remove(testinput_lastline)
         monkeypatch.setattr("sys.argv", ["main.py", "-f", testinput, "-o", testlog])
         main.main()
         captured = capsys.readouterr()
         assert "Processed remaining " in captured.out
         assert "lines from tests" in captured.out
         assert "Processed remaining 0 lines from tests" not in captured.out
+        assert os.path.isfile(testinput_lastline)

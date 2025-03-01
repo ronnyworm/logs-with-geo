@@ -1,5 +1,5 @@
 test:
-	pytest --show-capture=no tests/integration -s
+	pytest --cov=. --cov-report=html --show-capture=no tests/integration -s
 
 lint:
 	mv .venv ../.venv

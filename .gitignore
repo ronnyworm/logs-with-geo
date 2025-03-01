@@ -4,3 +4,5 @@ geoip-db/GeoLite2-City.mmdb
 .venv
 *.last_line
 *.pyc
+.coverage
+htmlcov
