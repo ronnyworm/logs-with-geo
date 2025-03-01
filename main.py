@@ -3,6 +3,7 @@ import sys
 import re
 import geoip2.database
 import argparse as ap
+import time
 
 # Regular expressions for extracting IP addresses from log lines of different formats
 IP_REGEX_ACCESS_LOG = r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
@@ -35,6 +36,8 @@ def get_geolocation(ip_address):
     try:
         # Perform GeoIP lookup for the IP address
         response = geoip2_reader.city(ip_address)
+        if response is None:
+            return None, None, None, None
         country = response.country.name
         city = response.city.name
         latitude = response.location.latitude
@@ -130,6 +133,7 @@ def handle_args():
     p.add_argument("-o", "--outfile", default='/var/log/apache2/with_geoip.log', help="Path to file that stores the enriched logs", required=True)
     p.add_argument("-f", "--sourcefiles", action="append", help="File(s) to read from", required=True)
     p.add_argument("-t", "--type", help="Log file type (guessing from outfile by default)")
+    p.add_argument("-i", "--interval", type=int, default=5, help="Interval (seconds) in which to process the logfiles; if -1 is given, it will process just once")
     p.add_argument("--logunresolved", type=int, default=1, help="Also print to outfile if no geo info could be retrieved")
 
     if len(sys.argv) == 1:
@@ -141,7 +145,7 @@ def handle_args():
     return args
 
 
-def main():
+def main(how_often=-1):
     args = handle_args()
 
     SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -164,14 +168,22 @@ def main():
     geoip2_reader = geoip2.database.Reader(DATABASE_FILE)
 
     # Process each log file and save geolocated data to the output file
-    for log_file, last_line_file in zip(LOG_FILES, LAST_LINE_FILES):
-        if 'vhost' in log_file:  # Check if it's a virtual host log file
-            ip_regex = IP_REGEX_VHOST_LOG
-        else:
-            ip_regex = IP_REGEX_ACCESS_LOG
-        process_access_log(log_file, last_line_file, ip_regex, args)
+    try:
+        count = 0
+        while how_often == -1 or count < how_often:
+            for log_file, last_line_file in zip(LOG_FILES, LAST_LINE_FILES):
+                if 'vhost' in log_file:  # Check if it's a virtual host log file
+                    ip_regex = IP_REGEX_VHOST_LOG
+                else:
+                    ip_regex = IP_REGEX_ACCESS_LOG
+                process_access_log(log_file, last_line_file, ip_regex, args)
+            if args.interval == -1:
+                break
+            time.sleep(args.interval)
+            count += 1
 
-    geoip2_reader.close()
+    finally:
+        geoip2_reader.close()
 
 
 if __name__ == '__main__':
