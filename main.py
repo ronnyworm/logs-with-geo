@@ -9,6 +9,7 @@ IP_REGEX_ACCESS_LOG = r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
 IP_REGEX_VHOST_LOG = r'^\S+ (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
 
 print_unknown_ips_to_stderr = True
+geoip2_reader = None
 
 class MyParser(ap.ArgumentParser):
     def error(self, message):
@@ -23,8 +24,8 @@ def exit_if_file_missing(filename):
         sys.exit(1)
 
 
-def print_to_outfile(text):
-    f = open(OUT_FILE, 'a', encoding='utf-8')
+def print_to(outfile, text):
+    f = open(outfile, 'a', encoding='utf-8')
 
     f.write(text + "\n")
     f.close()
@@ -108,26 +109,27 @@ def process_single_line(line_number, line, ip_regex, args):
         
         # Write the original log line and geolocation information to the output file
         if country and city:
-            print_to_outfile(f"{line.strip()} country:\"{country}\" city:\"{city}\" lat:{latitude} lng:{longitude}")
+            print_to(args.outfile, f"{line.strip()} country:\"{country}\" city:\"{city}\" lat:{latitude} lng:{longitude}")
         else:
             if print_unknown_ips_to_stderr:
                 sys.stderr.write(f"Log line {line_number} - Geolocation for {ip_address} not found\n")
 
             if args.logunresolved == 1:
-                print_to_outfile(f"{line.strip()} country:\"\" city:\"\" lat: lng:")
+                print_to(args.outfile, f"{line.strip()} country:\"\" city:\"\" lat: lng:")
 
     else:
         if print_unknown_ips_to_stderr:
             sys.stderr.write(f"Log line {line_number} - No IP address found\n")
 
         if args.logunresolved == 1:
-            print_to_outfile(f"{line.strip()} country:\"\" city:\"\" lat: lng:")
+            print_to(args.outfile, f"{line.strip()} country:\"\" city:\"\" lat: lng:")
 
 
 def handle_args():
     p = MyParser(description="Configuration", formatter_class=ap.ArgumentDefaultsHelpFormatter)
-    p.add_argument("-o", "--outfile", default='/var/log/apache2/with_geoip.log', help="Path to file that stores the enriched logs")
+    p.add_argument("-o", "--outfile", default='/var/log/apache2/with_geoip.log', help="Path to file that stores the enriched logs", required=True)
     p.add_argument("-f", "--sourcefiles", action="append", help="File(s) to read from", required=True)
+    p.add_argument("-t", "--type", help="Log file type (guessing from outfile by default)")
     p.add_argument("--logunresolved", type=int, default=1, help="Also print to outfile if no geo info could be retrieved")
 
     if len(sys.argv) == 1:
@@ -139,15 +141,19 @@ def handle_args():
     return args
 
 
-if __name__ == '__main__':
+def main():
     args = handle_args()
 
     SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
     DATABASE_FILE = SCRIPT_PATH + '/geoip-db/GeoLite2-City.mmdb' # MaxMind GeoIP2 database
-    geoip2_reader = geoip2.database.Reader(DATABASE_FILE)
 
-    OUT_FILE = args.outfile
     LOG_FILES = args.sourcefiles
+
+    if args.type == "":
+        if "apache" in args.outfile:
+            args.type = "apache"
+        elif "nginx" in args.outfile:
+            args.type = "nginx"
 
     # Path to the file storing the last processed line number for each log file
     LAST_LINE_FILES = [filename.replace('.log', '.last_line') for filename in LOG_FILES]
@@ -155,7 +161,9 @@ if __name__ == '__main__':
     [exit_if_file_missing(filename) for filename in LOG_FILES]
     exit_if_file_missing(DATABASE_FILE)
 
-    # Process each Apache access log file and save geolocated data to the output file
+    geoip2_reader = geoip2.database.Reader(DATABASE_FILE)
+
+    # Process each log file and save geolocated data to the output file
     for log_file, last_line_file in zip(LOG_FILES, LAST_LINE_FILES):
         if 'vhost' in log_file:  # Check if it's a virtual host log file
             ip_regex = IP_REGEX_VHOST_LOG
@@ -164,3 +172,7 @@ if __name__ == '__main__':
         process_access_log(log_file, last_line_file, ip_regex, args)
 
     geoip2_reader.close()
+
+
+if __name__ == '__main__':
+    main()

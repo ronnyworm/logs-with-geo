@@ -6,9 +6,15 @@ charset-normalizer==3.3.2
 frozenlist==1.4.1
 geoip2==4.8.0
 idna==3.7
+iniconfig==2.0.0
 maxminddb==2.6.1
 multidict==6.0.5
+packaging==24.2
+pluggy==1.5.0
+pytest==8.3.5
 requests==2.31.0
 setuptools==69.5.1
+six==1.17.0
+tzdata==2025.1
 urllib3==2.2.1
 yarl==1.9.4

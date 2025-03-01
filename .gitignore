@@ -3,3 +3,4 @@ geoip-db/GeoLite2-City.mmdb
 *.log
 .venv
 *.last_line
+*.pyc
