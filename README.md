@@ -7,23 +7,22 @@ The original idea here was to enrich my [apache](https://httpd.apache.org/) logs
 
 ## Setup on the server
 1. Get the GeoLite-City.mmdb from MaxMind GeoIP and store it to the `geoip-db` folder.
-2. Install requirements as root `python3 -m pip install -r requirements.txt` because we'll run the crontab as root later for accessing apache logs
+2. Install requirements as root `python3 -m pip install -r requirements.txt` because we'll run it as a root service later (dedicated user to be added)
 
 ### first run
 Prepare two sample log files: sample-logs/access.log and sample-logs/other_vhosts_access.log
 
 Attempt a first run like this
 
-	python3 main.py -o sample-logs/all_with_geoip.log -f sample-logs/access.log -f sample-logs/other_vhosts_access.log
+	python3 main.py -o sample-logs/all_with_geoip.log -f sample-logs/access.log -f sample-logs/other_vhosts_access.log -i -1
 
-### cron
-add this to roots crontab:
+### service
+modify the logs-with-geo.service and maybe add something like this
 
-	* * * * * /usr/bin/python3 /YOUR/PATH/logs-with-geo/main.py -o /var/log/apache2/all_with_geoip.log -f /var/log/apache2/access.log -f /var/log/apache2/other_vhosts_access.log
+	StandardOutput = append:/opt/custom/logs-with-geo/errors.log
+	ExecStart      = python3 /opt/custom/logs-with-geo/main.py -o /var/log/apache2/all_with_geoip.log -f /var/log/apache2/access.log -f /var/log/apache2/other_vhosts_access.log
 
-To run it more often than once a minute (eg every 10 seconds), you could use this:
-
-	*/1 * * * * /YOUR/PATH/logs-with-geo/runEvery.sh 5 "/usr/bin/python3 /YOUR/PATH/logs-with-geo/main.py -o /var/log/apache2/all_with_geoip.log -f /var/log/apache2/access.log -f /var/log/apache2/other_vhosts_access.log"
+Then install the service as usual (move the file to the services folder and start, enable, check status)
 
 Watch all_with_geoip.log grow with added geo data (eg with `tail -f all_with_geoip.log`!
 
@@ -34,18 +33,15 @@ prepare these files:
 
 run this in one window:
 
+	cd sample-logs
 	./log_faker.sh other_vhosts_access.orig.log other_vhosts_access.log
 
 and this in another
 
-	while [ 1 ]; do
-        python3 main.py -o sample-logs/all_with_geoip.log -f sample-logs/access.log -f sample-logs/other_vhosts_access.log
-	    sleep 3
-	done
+    python3 main.py -o sample-logs/all_with_geoip.log -f sample-logs/access.log -f sample-logs/other_vhosts_access.log
 
 Then watch the sample-logs/all_with_geoip.log grow with added geo data!
 
 ## To Dos
 - lint with flake8
-- set up integration tests
 - make it log source agnostic (not only apache, but also nginx or even something else that logs ips)

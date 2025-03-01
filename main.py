@@ -10,7 +10,6 @@ IP_REGEX_ACCESS_LOG = r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
 IP_REGEX_VHOST_LOG = r'^\S+ (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
 
 print_unknown_ips_to_stderr = True
-geoip2_reader = None
 
 class MyParser(ap.ArgumentParser):
     def error(self, message):
@@ -32,12 +31,10 @@ def print_to(outfile, text):
     f.close()
 
 
-def get_geolocation(ip_address):
+def get_geolocation(geoip2_reader, ip_address):
     try:
         # Perform GeoIP lookup for the IP address
         response = geoip2_reader.city(ip_address)
-        if response is None:
-            return None, None, None, None
         country = response.country.name
         city = response.city.name
         latitude = response.location.latitude
@@ -74,7 +71,7 @@ def get_last_processed_line(log_file, last_line_file):
     return last_processed_line
 
 
-def process_access_log(log_file, last_line_file, ip_regex, args):
+def process_access_log(log_file, last_line_file, ip_regex, args, geoip2_reader):
     last_processed_line = get_last_processed_line(log_file, last_line_file)
 
     processed_line_count = 0
@@ -90,7 +87,7 @@ def process_access_log(log_file, last_line_file, ip_regex, args):
 
             # Process remaining lines
             for line_number, line in enumerate(file, start=last_processed_line + 1):
-                process_single_line(line_number, line, ip_regex, args)
+                process_single_line(line_number, line, ip_regex, args, geoip2_reader)
 
                 processed_line_count += 1
                 last_processed_line = line_number
@@ -102,13 +99,13 @@ def process_access_log(log_file, last_line_file, ip_regex, args):
         f.write(str(last_processed_line))
 
 
-def process_single_line(line_number, line, ip_regex, args):
+def process_single_line(line_number, line, ip_regex, args, geoip2_reader):
     match = re.match(ip_regex, line)
     if match:
         ip_address = match.group(1)
 
         # Perform GeoIP lookup
-        country, city, latitude, longitude = get_geolocation(ip_address)
+        country, city, latitude, longitude = get_geolocation(geoip2_reader, ip_address)
         
         # Write the original log line and geolocation information to the output file
         if country and city:
@@ -176,7 +173,7 @@ def main(how_often=-1):
                     ip_regex = IP_REGEX_VHOST_LOG
                 else:
                     ip_regex = IP_REGEX_ACCESS_LOG
-                process_access_log(log_file, last_line_file, ip_regex, args)
+                process_access_log(log_file, last_line_file, ip_regex, args, geoip2_reader)
             if args.interval == -1:
                 break
             time.sleep(args.interval)
