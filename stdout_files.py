@@ -87,12 +87,10 @@ def handle_args():
 if __name__ == '__main__':
     args = handle_args()
 
-    LOG_FILES = args.sourcefiles
-
     # Path to the file storing the last processed line number for each log file
-    LAST_LINE_FILES = ["%s.last_line" % filename for filename in LOG_FILES]
+    last_line_files = ["%s.last_line" % filename for filename in args.sourcefiles]
 
     # Process each Apache access log file and save geolocated data to the output file
-    for log_file, last_line_file in zip(LOG_FILES, LAST_LINE_FILES):
+    for log_file, last_line_file in zip(args.sourcefiles, last_line_files):
         if os.path.isfile(log_file):
             process_log(log_file, last_line_file, args)

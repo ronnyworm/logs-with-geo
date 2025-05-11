@@ -149,8 +149,6 @@ def main(how_often=-1):
     SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
     DATABASE_FILE = SCRIPT_PATH + '/geoip-db/GeoLite2-City.mmdb'  # MaxMind GeoIP2 database
 
-    LOG_FILES = args.sourcefiles
-
     if args.type == "":
         if "apache" in args.outfile:
             args.type = "apache"
@@ -158,9 +156,9 @@ def main(how_often=-1):
             args.type = "nginx"
 
     # Path to the file storing the last processed line number for each log file
-    LAST_LINE_FILES = [filename.replace('.log', '.last_line') for filename in LOG_FILES]
+    last_line_files = [filename.replace('.log', '.last_line') for filename in args.sourcefiles]
 
-    [exit_if_file_missing(filename) for filename in LOG_FILES]
+    [exit_if_file_missing(filename) for filename in args.sourcefiles]
     exit_if_file_missing(DATABASE_FILE)
 
     geoip2_reader = geoip2.database.Reader(DATABASE_FILE)
@@ -169,7 +167,7 @@ def main(how_often=-1):
     try:
         count = 0
         while how_often == -1 or count < how_often:
-            for log_file, last_line_file in zip(LOG_FILES, LAST_LINE_FILES):
+            for log_file, last_line_file in zip(args.sourcefiles, last_line_files):
                 if 'vhost' in log_file:  # Check if it's a virtual host log file
                     ip_regex = IP_REGEX_VHOST_LOG
                 else:
