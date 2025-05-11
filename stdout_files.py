@@ -9,6 +9,7 @@ import os
 import sys
 import argparse as ap
 
+
 class MyParser(ap.ArgumentParser):
     def error(self, message):
         print('DEBUG: error: %s\n' % message)
@@ -32,7 +33,7 @@ def get_last_processed_line(log_file, last_line_file):
             last_processed_line = int(f.read())
     except (FileNotFoundError, ValueError):
         pass
-    
+
     # Check if the log file has been rotated
     if last_processed_line > 0 and last_processed_line > line_count(log_file):
         print('DEBUG: Log file has been rotated, reset last processed line number')
@@ -51,7 +52,7 @@ def process_log(log_file, last_line_file, args):
             try:
                 for _ in range(last_processed_line):
                     next(file)
-            except:
+            except:  # noqa: E722
                 print('DEBUG: Error while jumping to last_processed_line, reset it\n')
                 last_processed_line = 0
 
@@ -64,7 +65,7 @@ def process_log(log_file, last_line_file, args):
 
     if processed_line_count != 0:
         print(f'DEBUG: Processed remaining {processed_line_count} lines from {log_file}:{last_processed_line}')
-    
+
     # Write the last processed line number to the file
     with open(last_line_file, 'w') as f:
         f.write(str(last_processed_line))

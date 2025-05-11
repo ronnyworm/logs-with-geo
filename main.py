@@ -11,6 +11,7 @@ IP_REGEX_VHOST_LOG = r'^\S+ (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
 
 print_unknown_ips_to_stderr = True
 
+
 class MyParser(ap.ArgumentParser):
     def error(self, message):
         sys.stderr.write('error: %s\n' % message)
@@ -62,7 +63,7 @@ def get_last_processed_line(log_file, last_line_file):
             last_processed_line = int(f.read())
     except (FileNotFoundError, ValueError):
         pass
-    
+
     # Check if the log file has been rotated
     if last_processed_line > 0 and last_processed_line > line_count(log_file):
         sys.stderr.write('Log file has been rotated, reset last processed line number')
@@ -81,7 +82,7 @@ def process_access_log(log_file, last_line_file, ip_regex, args, geoip2_reader):
             try:
                 for _ in range(last_processed_line):
                     next(file)
-            except:
+            except:  # noqa: E722
                 sys.stderr.write('Error while jumping to last_processed_line, reset it\n')
                 last_processed_line = 0
 
@@ -93,7 +94,7 @@ def process_access_log(log_file, last_line_file, ip_regex, args, geoip2_reader):
                 last_processed_line = line_number
 
     print(f'Processed remaining {processed_line_count} lines from {log_file}:{last_processed_line}')
-    
+
     # Write the last processed line number to the file
     with open(last_line_file, 'w') as f:
         f.write(str(last_processed_line))
@@ -106,7 +107,7 @@ def process_single_line(line_number, line, ip_regex, args, geoip2_reader):
 
         # Perform GeoIP lookup
         country, city, latitude, longitude = get_geolocation(geoip2_reader, ip_address)
-        
+
         # Write the original log line and geolocation information to the output file
         if country and city:
             print_to(args.outfile, f"{line.strip()} country:\"{country}\" city:\"{city}\" lat:{latitude} lng:{longitude}")
@@ -130,7 +131,7 @@ def handle_args():
     p.add_argument("-o", "--outfile", default='/var/log/apache2/with_geoip.log', help="Path to file that stores the enriched logs", required=True)
     p.add_argument("-f", "--sourcefiles", action="append", help="File(s) to read from", required=True)
     p.add_argument("-t", "--type", help="Log file type (guessing from outfile by default)")
-    p.add_argument("-i", "--interval", type=int, default=5, help="Interval (seconds) in which to process the logfiles; if -1 is given, it will process just once")
+    p.add_argument("-i", "--interval", type=int, default=5, help="Interval (seconds) in which to process the logfiles; if -1 is given, it will process just once")  # noqa: E501
     p.add_argument("--logunresolved", type=int, default=1, help="Also print to outfile if no geo info could be retrieved")
 
     if len(sys.argv) == 1:
@@ -146,7 +147,7 @@ def main(how_often=-1):
     args = handle_args()
 
     SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
-    DATABASE_FILE = SCRIPT_PATH + '/geoip-db/GeoLite2-City.mmdb' # MaxMind GeoIP2 database
+    DATABASE_FILE = SCRIPT_PATH + '/geoip-db/GeoLite2-City.mmdb'  # MaxMind GeoIP2 database
 
     LOG_FILES = args.sourcefiles
 

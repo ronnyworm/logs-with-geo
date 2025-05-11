@@ -7,6 +7,7 @@ testlog = "tests/test.log"
 testinputfile = "tests/examples/other_vhosts_access.log"
 testinputfile_lastline = "tests/examples/other_vhosts_access.last_line"
 
+
 @pytest.fixture(autouse=True)
 def run_around_tests():
     if os.path.isfile(testlog):
@@ -15,6 +16,7 @@ def run_around_tests():
         os.remove(testinputfile_lastline)
 
     yield
+
 
 class TestMainFlow:
     def test_no_args(self, capsys, monkeypatch):
