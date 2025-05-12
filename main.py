@@ -6,8 +6,8 @@ import argparse as ap
 import time
 
 # Regular expressions for extracting IP addresses from log lines of different formats
-IP_REGEX_ACCESS_LOG = r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
-IP_REGEX_VHOST_LOG = r'^\S+ (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
+IP_REGEX_FIRST_WORD = r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
+IP_REGEX_SECOND_WORD = r'^\S+ (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
 
 print_unknown_ips_to_stderr = True
 
@@ -126,11 +126,35 @@ def process_single_line(line_number, line, ip_regex, args, geoip2_reader):
             print_to(args.outfile, f"{line.strip()} country:\"\" city:\"\" lat: lng:")
 
 
+def get_ip_regex_for_file(log_file, args):
+    if args.ipfield == -1:
+        if args.type == "apache":
+            if 'vhost' in log_file:  # Check if it's a virtual host log file
+                args.ipfield = 2
+            else:  # Standard access log then probably
+                args.ipfield = 1
+        elif args.type == "nginx":
+            # Standard "combined" log format, see https://nginx.org/en/docs/http/ngx_http_log_module.html
+            args.ipfield = 1
+        else:
+            sys.stderr.write(f"No behavior for args.type {args.type} defined\n")
+            sys.exit(1)
+
+    if args.ipfield == 1:
+        return IP_REGEX_FIRST_WORD
+    elif args.ipfield == 2:
+        return IP_REGEX_SECOND_WORD
+    else:
+        sys.stderr.write(f"No behavior for args.ipfield {args.ipfield} defined\n")
+        sys.exit(1)
+
+
 def handle_args():
     p = MyParser(description="Configuration", formatter_class=ap.ArgumentDefaultsHelpFormatter)
     p.add_argument("-o", "--outfile", default='/var/log/apache2/with_geoip.log', help="Path to file that stores the enriched logs", required=True)
     p.add_argument("-f", "--sourcefiles", action="append", help="File(s) to read from", required=True)
-    p.add_argument("-t", "--type", help="Log file type (guessing from outfile by default)")
+    p.add_argument("-t", "--type", help="Log file type (guessing from outfile by default or setting nginx)")
+    p.add_argument("--ipfield", type=int, default=-1, help="Field of IP address in log file (guessing from outfile by default)")
     p.add_argument("-i", "--interval", type=int, default=5, help="Interval (seconds) in which to process the logfiles; if -1 is given, it will process just once")  # noqa: E501
     p.add_argument("--logunresolved", type=int, default=1, help="Also print to outfile if no geo info could be retrieved")
 
@@ -149,10 +173,13 @@ def main(how_often=-1):
     SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
     DATABASE_FILE = SCRIPT_PATH + '/geoip-db/GeoLite2-City.mmdb'  # MaxMind GeoIP2 database
 
-    if args.type == "":
+    if args.type is None:
         if "apache" in args.outfile:
             args.type = "apache"
         elif "nginx" in args.outfile:
+            args.type = "nginx"
+        else:
+            # standard if nothing else is defined because it's more popular nowadays
             args.type = "nginx"
 
     # Path to the file storing the last processed line number for each log file
@@ -168,11 +195,7 @@ def main(how_often=-1):
         count = 0
         while how_often == -1 or count < how_often:
             for log_file, last_line_file in zip(args.sourcefiles, last_line_files):
-                if 'vhost' in log_file:  # Check if it's a virtual host log file
-                    ip_regex = IP_REGEX_VHOST_LOG
-                else:
-                    ip_regex = IP_REGEX_ACCESS_LOG
-                process_access_log(log_file, last_line_file, ip_regex, args, geoip2_reader)
+                process_access_log(log_file, last_line_file, get_ip_regex_for_file(log_file, args), args, geoip2_reader)
             if args.interval == -1:
                 break
             time.sleep(args.interval)
