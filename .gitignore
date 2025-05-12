@@ -1,4 +1,4 @@
-geoip-db/GeoLite2-City.mmdb
+geoip-db
 .DS_Store
 *.log
 .venv

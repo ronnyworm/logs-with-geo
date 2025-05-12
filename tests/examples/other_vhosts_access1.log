@@ -1,0 +1,1 @@
+example-domain1.de:443 88.20.54.108 - - [19/Oct/2021:10:45:21 +0100] "POST /loki/api/v1/push HTTP/1.1" 204 3125 "-" "promtail/"

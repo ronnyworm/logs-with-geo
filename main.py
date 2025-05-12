@@ -174,6 +174,7 @@ def main(how_often=-1):
     DATABASE_FILE = SCRIPT_PATH + '/geoip-db/GeoLite2-City.mmdb'  # MaxMind GeoIP2 database
 
     if args.type is None:
+        # checking outfile because we can have several input files
         if "apache" in args.outfile:
             args.type = "apache"
         elif "nginx" in args.outfile:
