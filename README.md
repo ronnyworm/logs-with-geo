@@ -5,6 +5,8 @@ Ingest and enrich logs with geoip information (country, city, latitude, longitud
 
 The original idea here was to enrich my [apache](https://httpd.apache.org/) logs for [Loki](https://grafana.com/oss/loki/) so that I could use the Geomap view for my logs in [Grafana](https://grafana.com/).
 
+The script also supports nginx access logs and other similar log formats.
+
 ## Setup on the server
 1. Get the GeoLite-City.mmdb from MaxMind GeoIP and store it to the `geoip-db` folder.
 2. Install requirements as root `python3 -m pip install -r requirements.txt` because we'll run it as a root service later (dedicated user to be added)
@@ -26,6 +28,9 @@ Then install the service as usual (move the file to the services folder and star
 
 Watch all_with_geoip.log grow with added geo data (eg with `tail -f all_with_geoip.log`!
 
+## Integration tests
+Just run `make testa` to test all
+
 ## Simulate behaviour (manual testing)
 prepare these files:
 - other_vhosts_access.log <- should be empty
@@ -41,7 +46,3 @@ and this in another
     python3 main.py -o sample-logs/all_with_geoip.log -f sample-logs/access.log -f sample-logs/other_vhosts_access.log
 
 Then watch the sample-logs/all_with_geoip.log grow with added geo data!
-
-## To Dos
-- lint with flake8
-- make it log source agnostic (not only apache, but also nginx or even something else that logs ips)
