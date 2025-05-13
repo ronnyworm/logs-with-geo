@@ -28,6 +28,24 @@ Then install the service as usual (move the file to the services folder and star
 
 Watch all_with_geoip.log grow with added geo data (eg with `tail -f all_with_geoip.log`!
 
+## CLI usage documentation
+	usage: main.py [-h] -o OUTFILE -f SOURCEFILES [-t TYPE] [--ipfield IPFIELD] [-i INTERVAL] [--logunresolved LOGUNRESOLVED]
+
+	Configuration
+
+	options:
+	  -h, --help            show this help message and exit
+	  -o OUTFILE, --outfile OUTFILE
+	                        Path to file that stores the enriched logs (default: /var/log/apache2/with_geoip.log)
+	  -f SOURCEFILES, --sourcefiles SOURCEFILES
+	                        File(s) to read from (default: None)
+	  -t TYPE, --type TYPE  Log file type (guessing from outfile by default or setting nginx) (default: None)
+	  --ipfield IPFIELD     Field of IP address in log file (guessing from outfile by default) (default: -1)
+	  -i INTERVAL, --interval INTERVAL
+	                        Interval (seconds) in which to process the logfiles; if -1 is given, it will process just once (default: 5)
+	  --logunresolved LOGUNRESOLVED
+	                        Also print to outfile if no geo info could be retrieved (default: 1)
+
 ## Integration tests
 Just run `make testa` to test all
 
