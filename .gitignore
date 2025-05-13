@@ -6,3 +6,4 @@ geoip-db
 *.pyc
 .coverage
 htmlcov
+logs-with-geo

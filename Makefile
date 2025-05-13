@@ -1,3 +1,13 @@
+.PHONY: build
+build:
+	docker build --platform linux/amd64 -t pyinstaller-builder .
+	docker run --platform linux/amd64 --rm -v "$(PWD)/dist:/app/dist" pyinstaller-builder
+	docker create --name extract-temp pyinstaller-builder
+	docker cp extract-temp:/app/dist .
+	docker rm extract-temp
+	mv dist/main ./logs-with-geo
+	chmod +x logs-with-geo
+
 testa:
 	pytest --cov=. --cov-report=html --show-capture=no tests/integration -s
 

@@ -7,16 +7,21 @@ The original idea here was to enrich my [apache](https://httpd.apache.org/) logs
 
 The script also supports nginx access logs and other similar log formats.
 
-## Setup on the server
+## Build for distribution on the server (e.g. Ubuntu)
+(assuming you're using a Mac, otherwise skip the platform arguments in the Makefile)
+
+	make build
+
+## Setup on the server (e.g. Ubuntu)
 1. Get the GeoLite-City.mmdb from MaxMind GeoIP and store it to the `geoip-db` folder.
-2. Install requirements as root `python3 -m pip install -r requirements.txt` because we'll run it as a root service later (dedicated user to be added)
+2. Move the built binary "logs-with-geo" to the server
 
 ### first run
 Prepare two sample log files: sample-logs/access.log and sample-logs/other_vhosts_access.log
 
 Attempt a first run like this
 
-	python3 main.py -o sample-logs/all_with_geoip.log -f sample-logs/access.log -f sample-logs/other_vhosts_access.log -i -1
+	logs-with-geo -o sample-logs/all_with_geoip.log -f sample-logs/access.log -f sample-logs/other_vhosts_access.log -i -1
 
 ### service
 modify the logs-with-geo.service and maybe add something like this
