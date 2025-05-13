@@ -12,6 +12,12 @@ IP_REGEX_SECOND_WORD = r'^\S+ (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
 print_unknown_ips_to_stderr = True
 
 
+def resource_path(relative_path):
+    # Works whether running from PyInstaller bundle or directly from Python
+    base_path = os.path.dirname(sys.executable if getattr(sys, 'frozen', False) else __file__)
+    return os.path.join(base_path, relative_path)
+
+
 class MyParser(ap.ArgumentParser):
     def error(self, message):
         sys.stderr.write('error: %s\n' % message)
@@ -171,7 +177,7 @@ def main(how_often=-1):
     args = handle_args()
 
     SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
-    DATABASE_FILE = SCRIPT_PATH + '/geoip-db/GeoLite2-City.mmdb'  # MaxMind GeoIP2 database
+    DATABASE_FILE = resource_path("geoip-db/GeoLite2-City.mmdb")  # MaxMind GeoIP2 database
 
     if args.type is None:
         # checking outfile because we can have several input files
